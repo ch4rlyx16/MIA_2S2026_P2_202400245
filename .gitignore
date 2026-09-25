@@ -1,0 +1,29 @@
+# ===== Backend C++ =====
+backend/consola
+backend/servidor
+backend/build/
+*.o
+*.a
+*.so
+*.out
+
+backend/generated/
+*.jar
+# ===== Frontend =====
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+.env
+.env.local
+# ===== Editores =====
+.vscode/
+.idea/
+*.swp
+*~
+# ===== Sistema =====
+.DS_Store
+Thumbs.db
+
+*.mia

@@ -1,0 +1,28 @@
+
+# --- Crear un disco de 5 MB con mejor ajuste ---
+mkdisk -size=5 -unit=M -fit=BF -path=/tmp/discos/Disco1.mia
+
+# --- Crear particiones primarias ---
+fdisk -size=500 -unit=K -path=/tmp/discos/Disco1.mia -name=Part1
+fdisk -size=500 -unit=K -path=/tmp/discos/Disco1.mia -name=Part2
+
+# --- Crear una extendida y dos logicas dentro ---
+fdisk -type=E -size=1 -unit=M -path=/tmp/discos/Disco1.mia -name=Extendida
+fdisk -type=L -size=200 -unit=K -path=/tmp/discos/Disco1.mia -name=Logica1
+fdisk -type=L -size=200 -unit=K -path=/tmp/discos/Disco1.mia -name=Logica2
+
+# --- Errores esperados ---
+# nombre repetido
+fdisk -size=100 -unit=K -path=/tmp/discos/Disco1.mia -name=Part1
+# segunda extendida en el mismo disco
+fdisk -type=E -size=100 -unit=K -path=/tmp/discos/Disco1.mia -name=Extendida2
+
+# --- Montar particiones primarias (IDs esperados: 451A, 452A) ---
+mount -path=/tmp/discos/Disco1.mia -name=Part1
+mount -path=/tmp/discos/Disco1.mia -name=Part2
+
+# --- Intentar montar una logica: debe fallar ---
+mount -path=/tmp/discos/Disco1.mia -name=Logica1
+
+# --- Listar montajes ---
+mounted

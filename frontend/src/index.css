@@ -1,0 +1,16 @@
+body {
+    margin: 0;
+    background: #fff;
+    color: #222;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+}
+
+h1, h2, p, ul {
+    margin: 0;
+}
+
+ul {
+    padding: 0;
+    list-style: none;
+}

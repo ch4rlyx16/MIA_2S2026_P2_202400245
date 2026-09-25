@@ -1,0 +1,71 @@
+.aplicacion {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 20px;
+}
+
+h2 {
+    font-size: 13px;
+    margin: 16px 0 6px;
+    color: #444;
+}
+
+.subtitulo,
+.nota {
+    color: #666;
+    font-size: 12px;
+}
+
+.nota {
+    margin-top: 10px;
+}
+
+.acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.acciones button {
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.nombre-archivo {
+    color: #666;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+/* Areas tipo terminal */
+.consola {
+    width: 100%;
+    box-sizing: border-box;
+    background: #0d0d0d;
+    color: #eaeaea;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.entrada {
+    height: 300px;
+    white-space: pre;
+    resize: vertical;
+}
+
+.salida {
+    min-height: 180px;
+    max-height: 400px;
+    overflow: auto;
+    white-space: pre-wrap;
+    margin: 0;
+}
