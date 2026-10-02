@@ -28,6 +28,13 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
         return;
     }
 
+    std::string fs = aMinusculas(sinComillas(p.obtener("-fs", "2fs")));
+    if (fs != "2fs" && fs != "3fs") {
+        salida.error("mkfs: -fs solo admite 2fs o 3fs");
+        return;
+    }
+
+    bool ext3 = fs == "3fs";
     const Montaje *m = buscarMontaje(id);
     if (m == nullptr) {
         salida.error("mkfs: no hay ninguna particion montada con id " + id);
@@ -36,8 +43,13 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
 
     // despejar n de la ecuacion del enunciado
     // part_s = sizeof(SB) + n + 3n + n*sizeof(Inodo) + 3n*sizeof(bloque)
+    // para Journal es igual pero primero se lleva su parte antes de repartir
     int denominador = 1 + 3 + static_cast<int>(sizeof(Inodo)) + 3 * TAM_BLOQUE;
-    int n = (m->tam - static_cast<int>(sizeof(SuperBloque))) / denominador;
+
+    int disponible = m->tam - static_cast<int>(sizeof(SuperBloque));
+    if (ext3) disponible -= JOURNAL_ENTRADAS * static_cast<int>(sizeof(Journal));
+
+    int n = disponible / denominador;
     if (n < 2) {
         salida.error("mkfs: la particion es muy pequena para formatear");
         return;
@@ -48,7 +60,7 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
     // armar el superbloque con las posiciones de cada area
     SuperBloque sb;
     std::memset(&sb, 0, sizeof(sb));
-    sb.s_filesystem_type   = 2;
+    sb.s_filesystem_type   = ext3 ? 3: 2;
     sb.s_inodes_count      = n;
     sb.s_blocks_count      = 3 * n;
     sb.s_free_inodes_count = n;
@@ -59,7 +71,12 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
     sb.s_magic             = 0xEF53;
     sb.s_inode_s           = sizeof(Inodo);
     sb.s_block_s           = TAM_BLOQUE;
-    sb.s_bm_inode_start    = inicio + static_cast<int>(sizeof(SuperBloque));
+    int trasSuperBloque = inicio + static_cast<int>(sizeof(SuperBloque));
+    int trasJournal = ext3
+        ? trasSuperBloque + JOURNAL_ENTRADAS * static_cast<int>(sizeof(Journal))
+        : trasSuperBloque;
+
+    sb.s_bm_inode_start    = trasJournal;
     sb.s_bm_block_start    = sb.s_bm_inode_start + n;
     sb.s_inode_start       = sb.s_bm_block_start + 3 * n;
     sb.s_block_start       = sb.s_inode_start + n * static_cast<int>(sizeof(Inodo));
@@ -69,6 +86,13 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
     // limpiar bitmaps todo libre
     for (int i = 0; i < n; ++i)      ponerBitInodo(m->ruta, sb, i, 0);
     for (int i = 0; i < 3 * n; ++i)  ponerBitBloque(m->ruta, sb, i, 0);
+
+    if (ext3) {
+        Journal vacio;
+        std::memset(&vacio, 0, sizeof(Journal));
+        for (int i = 0; i < JOURNAL_ENTRADAS; ++i)
+            escribirEn(m->ruta, trasSuperBloque + i * static_cast<int>(sizeof(Journal)), vacio);
+    }
 
     escribirSB(m->ruta, inicio, sb);
 
@@ -120,7 +144,8 @@ void cmdMkfs(const Parametros &p, Salida &salida) {
 
     escribirSB(m->ruta, inicio, sb);
 
-    salida.exito("mkfs: particion " + id + " formateada como ext2 (" +
+    salida.exito("mkfs: particion " + id + " formateada como " +
+                 (ext3 ? "ext3" : "ext2") + " (" +
                  std::to_string(n) + " inodos, " + std::to_string(3 * n) +
                  " bloques)");
 }

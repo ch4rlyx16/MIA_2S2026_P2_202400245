@@ -30,6 +30,15 @@ const std::map<std::string, std::vector<std::string>> &obligatorios() {
         { "mkfile",  { "-path" } },
         { "mkdir",   { "-path" } },
         { "rep",     { "-name", "-path", "-id" } },
+        { "journaling", { "-id" } },
+        { "loss",       { "-id" } },
+        { "unmount",    { "-id" } },
+        { "remove",     { "-path" } },
+        { "rename",     { "-path", "-name" } },
+        { "copy",       { "-path", "-destino" } },
+        { "move",       { "-path", "-destino" } },
+        { "find",       { "-path", "-name" } },
+        { "chown",      { "-path", "-usuario" } },
     };
     return tabla;
 }
@@ -64,8 +73,13 @@ void validarParametros(const Parametros &p,
     auto it = obligatorios().find(p.comando);
     if (it == obligatorios().end()) return;
 
+    // fdisk solo exige -size cuando esta creando, con -delete o -add no aplica
+    bool fdiskSinSize = p.comando == "fdisk" &&
+                        (p.tiene("-delete") || p.tiene("-add"));
+
     /* ---- Parametros obligatorios ausentes ---- */
     for (const std::string &requerido : it->second) {
+        if (fdiskSinSize && requerido == "-size") continue;
         if (!p.tiene(requerido)) {
             errores.push_back({ p.linea, p.columna,
                 "falta el parametro obligatorio " + requerido +

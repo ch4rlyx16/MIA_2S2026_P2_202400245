@@ -6,10 +6,11 @@
 #include <string>
 
 // acceso al sistema de archivos ext2 de una particion
-// todo va directo al .mia nada se guarda en memoria
 
 // el sb se escribe al inicio de la particion asi que de ahi se deduce
 int inicioParticion(const SuperBloque &sb);
+bool esExt3(const SuperBloque &sb);
+int inicioJournal(const SuperBloque &sb);
 
 // posicion en bytes de un inodo o un bloque
 long posInodo (const SuperBloque &sb, int indice);
@@ -50,6 +51,18 @@ bool escribirArchivo(const std::string &ruta, SuperBloque &sb,
 // asigna un bloque nuevo si los que tiene ya estan llenos
 bool agregarEntrada(const std::string &ruta, SuperBloque &sb, int indiceCarpeta,
                     Inodo &carpeta, const std::string &nombre, int inodoDestino);
+
+// borra una entrada de una carpeta, deja el hueco libre
+bool quitarEntrada(const std::string &ruta, const SuperBloque &sb,
+                   const Inodo &carpeta, const std::string &nombre);
+
+// cambia el nombre de una entrada sin tocar a que inodo apunta
+bool renombrarEntrada(const std::string &ruta, const SuperBloque &sb,
+                      const Inodo &carpeta, const std::string &viejo,
+                      const std::string &nuevo);
+
+// libera un inodo con sus bloques, y si es carpeta todo lo que cuelga de el
+void liberarInodo(const std::string &ruta, SuperBloque &sb, int indice);
 
 // busca una entrada por nombre dentro de una carpeta -1 si no esta
 int buscarEntrada(const std::string &ruta, const SuperBloque &sb,

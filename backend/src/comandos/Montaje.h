@@ -29,5 +29,9 @@ const std::vector<Montaje> &montajes();
 
 void cmdMount  (const Parametros &p, Salida &salida);
 void cmdMounted(const Parametros &p, Salida &salida);
+void cmdUnmount(const Parametros &p, Salida &salida);
+
+// saca una particion de la tabla, la usa fdisk -delete
+void sacarDeLaTabla(const std::string &ruta, const std::string &nombre);
 
 #endif

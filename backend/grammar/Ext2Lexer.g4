@@ -24,6 +24,15 @@ CHGRP   : C H G R P        ;
 MKFILE  : M K F I L E      ;
 MKDIR   : M K D I R        ;
 REP     : R E P            ;
+JOURNALING : J O U R N A L I N G ;
+LOSS       : L O S S ;
+UNMOUNT    : U N M O U N T ;
+REMOVE     : R E M O V E ;
+RENAME     : R E N A M E ;
+COPY       : C O P Y ;
+MOVE       : M O V E ;
+FIND       : F I N D ;
+CHOWN      : C H O W N ;
 
 /* ---------- 2. PARAMETROS ---------- */
 P_SIZE          : GUION S I Z E ;
@@ -40,6 +49,11 @@ P_CONT          : GUION C O N T ;
 P_R             : GUION R       ;   // bandera de mkfile
 P_P             : GUION P       ;   // bandera de mkdir
 P_PATH_FILE_LS  : GUION P A T H '_' F I L E '_' L S ;
+P_FS            : GUION F S     ;
+P_DELETE        : GUION D E L E T E ;
+P_ADD           : GUION A D D ;
+P_DESTINO       : GUION D E S T I N O ;
+P_USUARIO       : GUION U S U A R I O ;
 
 /* cat recibe -file1, -file2 ... -fileN: el numero es parte del nombre
    del parametro, no un valor, asi que se reconoce dentro del token. */
@@ -50,12 +64,15 @@ VAL_BF   : B F     ;
 VAL_FF   : F F     ;
 VAL_WF   : W F     ;
 VAL_FULL : F U L L ;
+VAL_FAST : F A S T ;
 VAL_B : B ;
 VAL_K : K ;
 VAL_M : M ;
 VAL_P : P ;
 VAL_E : E ;
 VAL_L : L ;
+VAL_2FS  : '2' F S ;
+VAL_3FS  : '3' F S ;
 
 /* ---------- 4. SIMBOLOS ---------- */
 EQ : '=' ;
@@ -65,6 +82,9 @@ NEGATIVO : GUION DIGITO+ ;
 ENTERO   : DIGITO+ ;
 CADENA   : '"' ~["\r\n]* '"' ;
 RUTA     : ( '/' | './' | '../' ) ~[ \t\r\n"=]* ;
+/* un patron de busqueda lleva al menos un * o un ?, eso lo separa de ID */
+PATRON   : ( LETRA | DIGITO | '.' | '_' | '*' | '?' )* ( '*' | '?' )
+           ( LETRA | DIGITO | '.' | '_' | '*' | '?' )* ;
 ID       : DIGITO* LETRA ( LETRA | DIGITO | '_' | '.' )* ;
 
 /* ---------- 6. IGNORADOS / SEPARADORES ---------- */

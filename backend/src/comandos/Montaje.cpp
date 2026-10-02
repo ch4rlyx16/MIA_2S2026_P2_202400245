@@ -129,3 +129,51 @@ void cmdMounted(const Parametros &, Salida &salida) {
         salida.escribir(fila + nombre + m.ruta);
     }
 }
+
+/* ============================================================
+   UNMOUNT
+   ============================================================ */
+void cmdUnmount(const Parametros &p, Salida &salida) {
+    std::string id = aMayusculas(sinComillas(p.obtener("-id")));
+
+    const Montaje *m = buscarMontaje(id);
+    if (m == nullptr) {
+        salida.error("unmount: no hay ninguna particion montada con id " + id);
+        return;
+    }
+
+    std::string ruta   = m->ruta;
+    std::string nombre = m->nombre;
+
+    // devolver la particion del disco a su estado de solo creada
+    MBR mbr;
+    if (leerDe(ruta, 0, mbr)) {
+        for (Particion &particion : mbr.mbr_partitions) {
+            if (particion.part_status == '0') continue;
+            if (aTexto(particion.part_name, 16) != nombre) continue;
+
+            particion.part_status      = '1';   // creada pero no montada
+            particion.part_correlative = 0;     // el enunciado pide dejarlo en 0
+            copiarCampo(particion.part_id, 4, "");
+            break;
+        }
+        escribirEn(ruta, 0, mbr);
+    }
+
+    // y sacarla de la tabla de RAM para que mounted ya no la liste
+    for (size_t i = 0; i < tabla.size(); ++i) {
+        if (tabla[i].id != id) continue;
+        tabla.erase(tabla.begin() + i);
+        break;
+    }
+
+    salida.exito("unmount: particion " + nombre + " desmontada (id " + id + ")");
+}
+
+void sacarDeLaTabla(const std::string &ruta, const std::string &nombre) {
+    for (size_t i = 0; i < tabla.size(); ++i) {
+        if (tabla[i].ruta != ruta || tabla[i].nombre != nombre) continue;
+        tabla.erase(tabla.begin() + i);
+        return;
+    }
+}

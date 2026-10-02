@@ -2,6 +2,7 @@
 #include "Montaje.h"
 #include "Permisos.h"
 #include "Sesion.h"
+#include "../disco/Journal.h"
 
 #include "../disco/Ext2.h"
 #include "../util/Archivo.h"
@@ -206,6 +207,7 @@ void cmdMkfile(const Parametros &p, Salida &salida) {
     }
 
     escribirSB(m->ruta, inicioParticion(sb), sb);
+    anotarJournal(m, "mkfile", destino, contenido);  
 
     salida.exito("mkfile: archivo " + destino +
                  (sobrescribe ? " sobrescrito" : " creado") +
@@ -275,6 +277,11 @@ void cmdMkdir(const Parametros &p, Salida &salida) {
         salida.error("mkdir: no se pudo crear la carpeta " + destino);
         return;
     }
+
+
+    anotarJournal(m, "mkdir", destino, "");         
+
+    
 
     salida.exito("mkdir: carpeta " + destino + " creada");
 }

@@ -6,9 +6,17 @@
 #include <sstream>
 
 int inicioParticion(const SuperBloque &sb) {
-    return sb.s_bm_inode_start - static_cast<int>(sizeof(SuperBloque));
+    int atras = static_cast<int>(sizeof(SuperBloque));
+    if (sb.s_filesystem_type == 3)
+        atras += JOURNAL_ENTRADAS * static_cast<int>(sizeof(Journal));
+    return sb.s_bm_inode_start - atras;
 }
-
+bool esExt3(const SuperBloque &sb){
+    return sb.s_filesystem_type == 3;
+}
+int inicioJournal(const SuperBloque &sb){
+    return inicioParticion(sb) + static_cast<int>(sizeof(SuperBloque));
+}
 long posInodo(const SuperBloque &sb, int i) {
     return sb.s_inode_start + i * static_cast<long>(sizeof(Inodo));
 }
@@ -299,4 +307,87 @@ bool agregarEntrada(const std::string &ruta, SuperBloque &sb, int indiceCarpeta,
         return true;
     }
     return false;   // carpeta llena
+}
+
+bool quitarEntrada(const std::string &ruta, const SuperBloque &sb,
+                   const Inodo &carpeta, const std::string &nombre) {
+    for (int d = 0; d < 12; ++d) {
+        if (carpeta.i_block[d] == -1) continue;
+
+        BloqueCarpeta bloque;
+        leerDe(ruta, posBloque(sb, carpeta.i_block[d]), bloque);
+
+        for (Contenido &c : bloque.b_content) {
+            if (c.b_inodo == -1) continue;
+            if (aTexto(c.b_name, 12) != nombre) continue;
+
+            // dejar la entrada libre para que agregarEntrada la reuse
+            c.b_inodo = -1;
+            std::memset(c.b_name, 0, 12);
+            escribirEn(ruta, posBloque(sb, carpeta.i_block[d]), bloque);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool renombrarEntrada(const std::string &ruta, const SuperBloque &sb,
+                      const Inodo &carpeta, const std::string &viejo,
+                      const std::string &nuevo) {
+    for (int d = 0; d < 12; ++d) {
+        if (carpeta.i_block[d] == -1) continue;
+
+        BloqueCarpeta bloque;
+        leerDe(ruta, posBloque(sb, carpeta.i_block[d]), bloque);
+
+        for (Contenido &c : bloque.b_content) {
+            if (c.b_inodo == -1) continue;
+            if (aTexto(c.b_name, 12) != viejo) continue;
+
+            copiarCampo(c.b_name, 12, nuevo);
+            escribirEn(ruta, posBloque(sb, carpeta.i_block[d]), bloque);
+            return true;
+        }
+    }
+    return false;
+}
+
+void liberarInodo(const std::string &ruta, SuperBloque &sb, int indice) {
+    Inodo nodo;
+    if (!leerInodo(ruta, sb, indice, nodo)) return;
+
+    // si es carpeta primero se liberan sus hijos, de abajo hacia arriba
+    if (nodo.i_type == '0') {
+        for (int d = 0; d < 12; ++d) {
+            if (nodo.i_block[d] == -1) continue;
+
+            BloqueCarpeta bloque;
+            leerDe(ruta, posBloque(sb, nodo.i_block[d]), bloque);
+
+            for (const Contenido &c : bloque.b_content) {
+                std::string n = aTexto(c.b_name, 12);
+                if (c.b_inodo == -1 || n == "." || n == "..") continue;
+                liberarInodo(ruta, sb, c.b_inodo);
+            }
+        }
+    }
+
+    // soltar los bloques de datos, los bloques se asignan seguidos
+    // asi que el primero que falta marca el final
+    for (int n = 0; ; ++n) {
+        int fisico = bloqueLogico(ruta, sb, nodo, n, false);
+        if (fisico == -1) break;
+        ponerBitBloque(ruta, sb, fisico, 0);
+        sb.s_free_blocks_count++;
+    }
+
+    // y los bloques de apuntadores, que no son de datos
+    for (int b = 12; b < 15; ++b) {
+        if (nodo.i_block[b] == -1) continue;
+        ponerBitBloque(ruta, sb, nodo.i_block[b], 0);
+        sb.s_free_blocks_count++;
+    }
+
+    ponerBitInodo(ruta, sb, indice, 0);
+    sb.s_free_inodes_count++;
 }

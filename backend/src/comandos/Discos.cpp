@@ -1,4 +1,5 @@
 #include "Discos.h"
+#include "Montaje.h"
 
 #include "../estructuras/Estructuras.h"
 #include "../util/Archivo.h"
@@ -119,6 +120,92 @@ bool nombreRepetido(const std::string &ruta, const MBR &mbr,
     return false;
 }
 
+// devuelve el indice de la particion con ese nombre, -1 si no esta
+int indiceDe(const MBR &mbr, const std::string &nombre) {
+    for (int i = 0; i < 4; ++i) {
+        if (mbr.mbr_partitions[i].part_status == '0') continue;
+        if (aTexto(mbr.mbr_partitions[i].part_name, 16) == nombre) return i;
+    }
+    return -1;
+}
+
+// borra una particion del mbr, con full ademas rellena su espacio de ceros
+bool eliminarParticion(const std::string &ruta, MBR &mbr,
+                       const std::string &nombre, bool completo,
+                       Salida &salida) {
+    int i = indiceDe(mbr, nombre);
+    if (i == -1) {
+        salida.error("fdisk: no existe la particion " + nombre + " en " + ruta);
+        return false;
+    }
+
+    Particion &pt = mbr.mbr_partitions[i];
+    if (pt.part_status == '2') {
+        salida.error("fdisk: la particion " + nombre +
+                     " esta montada, desmontela antes de eliminarla");
+        return false;
+    }
+
+    // en modo full se borra el contenido, con el se van las logicas si era extendida
+    if (completo) {
+        FILE *archivo = std::fopen(ruta.c_str(), "rb+");
+        if (archivo != nullptr) {
+            std::fseek(archivo, pt.part_start, SEEK_SET);
+            char vacio[1024] = { 0 };
+            for (int escrito = 0; escrito < pt.part_s; escrito += sizeof(vacio)) {
+                size_t trozo = std::min<int>(sizeof(vacio), pt.part_s - escrito);
+                std::fwrite(vacio, 1, trozo, archivo);
+            }
+            std::fclose(archivo);
+        }
+    }
+
+    std::memset(&pt, 0, sizeof(Particion));
+    pt.part_status      = '0';
+    pt.part_start       = -1;
+    pt.part_s           = -1;
+    pt.part_correlative = -1;
+    return true;
+}
+
+// suma o resta espacio a una particion ya creada
+bool ajustarEspacio(MBR &mbr, const std::string &nombre,
+                    long long cantidad, Salida &salida) {
+    int i = indiceDe(mbr, nombre);
+    if (i == -1) {
+        salida.error("fdisk: no existe la particion " + nombre);
+        return false;
+    }
+
+    Particion &pt = mbr.mbr_partitions[i];
+
+    if (cantidad < 0) {
+        // al quitar no puede quedar en cero ni en negativo
+        if (pt.part_s + cantidad <= 0) {
+            salida.error("fdisk: no se puede quitar tanto espacio a " + nombre +
+                         ", solo tiene " + std::to_string(pt.part_s) + " bytes");
+            return false;
+        }
+        pt.part_s += static_cast<int>(cantidad);
+        return true;
+    }
+
+    // al agregar tiene que haber lugar libre justo despues de la particion
+    int limite = mbr.mbr_tamano;
+    for (const Particion &otra : mbr.mbr_partitions) {
+        if (otra.part_status == '0' || otra.part_start <= pt.part_start) continue;
+        if (otra.part_start < limite) limite = otra.part_start;
+    }
+
+    if (pt.part_start + pt.part_s + cantidad > limite) {
+        salida.error("fdisk: no hay espacio libre despues de " + nombre +
+                     " para agregar " + std::to_string(cantidad) + " bytes");
+        return false;
+    }
+    pt.part_s += static_cast<int>(cantidad);
+    return true;
+}
+
 } // namespace
 
 /* ============================================================
@@ -223,6 +310,64 @@ void cmdFdisk(const Parametros &p, Salida &salida) {
     std::string ruta   = sinComillas(p.obtener("-path"));
     std::string nombre = sinComillas(p.obtener("-name"));
 
+    // lo que vale para los tres modos: nombre, disco y mbr
+    if (nombre.empty()) {
+        salida.error("fdisk: -name no puede estar vacio");
+        return;
+    }
+    if (!existeArchivo(ruta)) {
+        salida.error("fdisk: no existe el disco " + ruta);
+        return;
+    }
+
+    MBR mbr;
+    if (!leerDe(ruta, 0, mbr)) {
+        salida.error("fdisk: no se pudo leer el MBR de " + ruta);
+        return;
+    }
+
+    /* ---------- Modo eliminar ---------- */
+    if (p.tiene("-delete")) {
+        std::string modo = aMinusculas(sinComillas(p.obtener("-delete")));
+        if (modo != "fast" && modo != "full") {
+            salida.error("fdisk: -delete solo admite fast o full");
+            return;
+        }
+        if (!eliminarParticion(ruta, mbr, nombre, modo == "full", salida)) return;
+        if (!escribirEn(ruta, 0, mbr)) {
+            salida.error("fdisk: no se pudo actualizar el MBR");
+            return;
+        }
+        sacarDeLaTabla(ruta, nombre);
+        salida.exito("fdisk: particion " + nombre + " eliminada en modo " + modo);
+        return;
+    }
+
+    /* ---------- Modo agregar o quitar espacio ---------- */
+    // el enunciado dice que si viene -add se ignora -size
+    if (p.tiene("-add")) {
+        long long factorAdd = factorUnidad(p.obtener("-unit", "K"), true);
+        if (factorAdd == 0) {
+            salida.error("fdisk: -unit solo admite B, K o M");
+            return;
+        }
+        long long cantidad = std::atoll(p.obtener("-add").c_str()) * factorAdd;
+        if (cantidad == 0) {
+            salida.error("fdisk: -add no puede ser cero");
+            return;
+        }
+        if (!ajustarEspacio(mbr, nombre, cantidad, salida)) return;
+        if (!escribirEn(ruta, 0, mbr)) {
+            salida.error("fdisk: no se pudo actualizar el MBR");
+            return;
+        }
+        salida.exito("fdisk: a la particion " + nombre + " se le " +
+                     (cantidad > 0 ? "agregaron " : "quitaron ") +
+                     std::to_string(cantidad > 0 ? cantidad : -cantidad) + " bytes");
+        return;
+    }
+
+    /* ---------- Modo crear ---------- */
     long long tamano = std::atoll(p.obtener("-size", "0").c_str());
     if (tamano <= 0) {
         salida.error("fdisk: -size debe ser un numero mayor que cero");
@@ -249,20 +394,6 @@ void cmdFdisk(const Parametros &p, Salida &salida) {
         return;
     }
 
-    if (nombre.empty()) {
-        salida.error("fdisk: -name no puede estar vacio");
-        return;
-    }
-    if (!existeArchivo(ruta)) {
-        salida.error("fdisk: no existe el disco " + ruta);
-        return;
-    }
-
-    MBR mbr;
-    if (!leerDe(ruta, 0, mbr)) {
-        salida.error("fdisk: no se pudo leer el MBR de " + ruta);
-        return;
-    }
     if (nombreRepetido(ruta, mbr, nombre)) {
         salida.error("fdisk: ya existe una particion llamada " + nombre +
                      " en este disco");

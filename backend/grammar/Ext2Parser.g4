@@ -15,6 +15,9 @@ comando
     | cmdMkgrp   | cmdRmgrp   | cmdMkusr
     | cmdRmusr   | cmdChgrp
     | cmdMkfile  | cmdMkdir   | cmdRep
+    | cmdJournaling | cmdLoss | cmdUnmount
+    | cmdRemove | cmdRename | cmdCopy
+    | cmdMove | cmdFind | cmdChown
     ;
 
 /* ---------- Administracion de discos ---------- */
@@ -37,6 +40,8 @@ paramFdisk
     | P_TYPE EQ valorTipoParticion
     | P_FIT  EQ valorFit
     | P_NAME EQ valorTexto
+    | P_DELETE EQ valorTipoBorrado
+    | P_ADD EQ valorEntero
     ;
 
 cmdMount : MOUNT paramMount* ;
@@ -53,10 +58,50 @@ cmdMkfs : MKFS paramMkfs* ;
 paramMkfs
     : P_ID   EQ valorTexto
     | P_TYPE EQ valorTipoFormateo
+    | P_FS   EQ valorSistemaArchivos
+    ;
+valorSistemaArchivos : VAL_2FS | VAL_3FS ;
+cmdJournaling : JOURNALING paramJournaling* ;
+paramJournaling : P_ID EQ valorTexto ;
+
+cmdLoss : LOSS paramLoss* ;
+paramLoss : P_ID EQ valorTexto ;
+
+cmdUnmount : UNMOUNT paramUnmount* ;
+paramUnmount : P_ID EQ valorTexto ;
+
+/* ---------- Operaciones sobre archivos y carpetas ---------- */
+cmdRemove : REMOVE paramRemove* ;
+paramRemove : P_PATH EQ valorRuta ;
+
+cmdRename : RENAME paramRename* ;
+paramRename
+    : P_PATH EQ valorRuta
+    | P_NAME EQ valorTexto
     ;
 
+cmdCopy : COPY paramCopyMove* ;
+cmdMove : MOVE paramCopyMove* ;
+paramCopyMove
+    : P_PATH    EQ valorRuta
+    | P_DESTINO EQ valorRuta
+    ;
+
+cmdFind : FIND paramFind* ;
+paramFind
+    : P_PATH EQ valorRuta
+    | P_NAME EQ valorTexto
+    ;
+
+cmdChown : CHOWN paramChown* ;
+paramChown
+    : P_PATH    EQ valorRuta
+    | P_USUARIO EQ valorTexto
+    | P_R
+    ;
 cmdCat : CAT paramCat* ;
 paramCat : P_FILEN EQ valorRuta ;
+
 
 /* ---------- Sesiones ---------- */
 cmdLogin : LOGIN paramLogin* ;
@@ -125,10 +170,12 @@ valorUnidadKM      : VAL_K | VAL_M ;
 valorUnidadBKM     : VAL_B | VAL_K | VAL_M ;
 valorTipoParticion : VAL_P | VAL_E | VAL_L ;
 valorTipoFormateo  : VAL_FULL ;
+valorTipoBorrado   : VAL_FAST | VAL_FULL ;
 
 
 valorTexto
     : ID | ENTERO | CADENA
     | VAL_BF | VAL_FF | VAL_WF | VAL_FULL
     | VAL_B | VAL_K | VAL_M | VAL_P | VAL_E | VAL_L
-    ;
+    | VAL_2FS | VAL_3FS | VAL_FAST | PATRON
+   ;

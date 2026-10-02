@@ -1,5 +1,7 @@
 #include "Ejecutor.h"
-
+#include "comandos/Journaling.h"
+#include "comandos/Loss.h"
+#include "comandos/Operaciones.h"
 #include "Analizador.h"
 #include "comandos/Discos.h"
 #include "comandos/Montaje.h"
@@ -39,11 +41,20 @@ const std::map<std::string, Manejador> &manejadores() {
         { "mkfile",  cmdMkfile  },
         { "mkdir",   cmdMkdir   },
         { "rep",     cmdRep     },
+        { "journaling", cmdJournaling },
+        { "loss",       cmdLoss     },
+        { "unmount",    cmdUnmount  },
+        { "remove",     cmdRemove   },
+        { "rename",     cmdRename   },
+        { "copy",       cmdCopy     },
+        { "move",       cmdMove     },
+        { "find",       cmdFind     },
+        { "chown",      cmdChown    },
     };
     return tabla;
 }
 
-/* Quita espacios de los dos extremos, para reconocer lineas en blanco
+/* Quitamo  espacios de los dos extremos, para reconocer lineas en blanco
    y comentarios que empiezan con sangria */
 std::string recortar(const std::string &texto) {
     size_t inicio = texto.find_first_not_of(" \t\r");

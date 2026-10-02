@@ -96,12 +96,27 @@ struct BloqueApuntadores {
     int b_pointers[16];
 };
 
+// estructuras para ext3
+struct Information {
+    char i_operation[10];
+    char i_path[32];
+    char i_content[64];
+    float i_date;
+};
+
+struct Journal {
+    int j_count;
+    Information j_content;
+};
+
 #pragma pack(pop)
 
 const int TAM_BLOQUE = sizeof(BloqueCarpeta);
+const int JOURNAL_ENTRADAS = 50;
 
-static_assert(sizeof(BloqueCarpeta)     == 64, "bloque carpeta debe medir 64");
+static_assert(sizeof(Information) == 110, "information debe medir 110");
+static_assert(sizeof(Journal)     == 114, "journal debe medir 114");
 static_assert(sizeof(BloqueArchivo)     == 64, "bloque archivo debe medir 64");
 static_assert(sizeof(BloqueApuntadores) == 64, "bloque apuntadores debe medir 64");
-
+static_assert(sizeof(BloqueCarpeta)     == 64, "bloque carpeta debe medir 64");
 #endif
