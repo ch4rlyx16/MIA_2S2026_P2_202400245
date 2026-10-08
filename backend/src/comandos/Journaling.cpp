@@ -57,7 +57,7 @@ void cmdJournaling(const Parametros &p, Salida &salida) {
     if (entradas.empty()) {
         salida.escribir("journaling: la bitacora de " + id + " esta vacia");
         return;
-    }
+    } 
 
     salida.escribir(columna("No", 5) + columna("OPERACION", 12) +
                     columna("PATH", 34) + columna("CONTENIDO", 34) + "FECHA");

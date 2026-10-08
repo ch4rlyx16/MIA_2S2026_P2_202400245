@@ -120,6 +120,9 @@ bool nombreRepetido(const std::string &ruta, const MBR &mbr,
     return false;
 }
 
+// los discos que el servidor conoce en esta corrida
+std::vector<std::string> conocidos;
+
 // devuelve el indice de la particion con ese nombre, -1 si no esta
 int indiceDe(const MBR &mbr, const std::string &nombre) {
     for (int i = 0; i < 4; ++i) {
@@ -208,6 +211,22 @@ bool ajustarEspacio(MBR &mbr, const std::string &nombre,
 
 } // namespace
 
+void registrarDisco(const std::string &ruta) {
+    for (const std::string &r : conocidos)
+        if (r == ruta) return;
+    conocidos.push_back(ruta);
+}
+
+void olvidarDisco(const std::string &ruta) {
+    for (size_t i = 0; i < conocidos.size(); ++i) {
+        if (conocidos[i] != ruta) continue;
+        conocidos.erase(conocidos.begin() + i);
+        return;
+    }
+}
+
+const std::vector<std::string> &discosRegistrados() { return conocidos; }
+
 /* ============================================================
    MKDISK
    ============================================================ */
@@ -282,6 +301,7 @@ void cmdMkdisk(const Parametros &p, Salida &salida) {
         return;
     }
 
+    registrarDisco(ruta);
     salida.exito("mkdisk: disco creado en " + ruta +
                  " (" + std::to_string(total) + " bytes)");
 }
@@ -300,6 +320,7 @@ void cmdRmdisk(const Parametros &p, Salida &salida) {
         salida.error("rmdisk: no se pudo eliminar " + ruta);
         return;
     }
+    olvidarDisco(ruta);
     salida.exito("rmdisk: disco eliminado " + ruta);
 }
 

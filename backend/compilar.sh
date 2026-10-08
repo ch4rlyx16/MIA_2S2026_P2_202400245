@@ -30,7 +30,7 @@ done
 
 # Codigo propio (analizador, ejecutor, comandos, utilidades).
 # Se excluyen main.cpp y servidor.cpp porque son los puntos de entrada.
-for fuente in src/Analizador.cpp src/Validador.cpp src/Ejecutor.cpp \
+for fuente in src/Analizador.cpp src/Validador.cpp src/Ejecutor.cpp src/Api.cpp \
               src/comandos/*.cpp src/util/*.cpp src/disco/*.cpp src/reportes/*.cpp; do
     objeto="build/$(basename "$fuente" .cpp).o"
     g++ $FLAGS -c "$fuente" -o "$objeto"

@@ -1,4 +1,5 @@
 #include "Montaje.h"
+#include "Discos.h"
 
 #include "../estructuras/Estructuras.h"
 #include "../util/Archivo.h"
@@ -105,6 +106,7 @@ void cmdMount(const Parametros &p, Salida &salida) {
         return;
     }
 
+    registrarDisco(ruta);
     tabla.push_back({ id, ruta, nombre,
                       particion.part_start, particion.part_s, letra, numero });
 
