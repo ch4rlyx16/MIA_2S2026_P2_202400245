@@ -70,8 +70,12 @@ export default function Visualizador() {
     }
 
     function abrirParticion(p) {
-        // las que no estan montadas no tienen id y sin id no se puede leer
+        // sin id no se puede leer y hay dos motivos distintos para no tenerlo
         // es un aviso y no un error de carga asi que la tabla se queda
+        if (p.tipo !== "Primaria") {
+            setMensaje(`las particiones ${p.tipo.toLowerCase()}s no se montan, solo las primarias`);
+            return;
+        }
         if (!p.id) {
             setMensaje(`la particion ${p.nombre} no esta montada, montala desde la terminal`);
             return;
