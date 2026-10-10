@@ -146,8 +146,12 @@ json apiParticiones(const std::string &rutaDisco) {
 /* ---------- Sesion ---------- */
 json apiLogin(const std::string &id, const std::string &usuario,
               const std::string &pass) {
-    // el formulario reemplaza la sesion anterior, asi que primero se cierra:
-    // si no, cmdLogin fallaria y la sesion vieja haria creer que entro bien
+    Sesion nueva;
+    std::string motivo;
+    if (!autenticar(id, usuario, pass, nueva, motivo))
+        return json{{ "ok", false }, { "error", motivo }};
+
+    // ya se sabe que son buenas asi que el relevo es seguro
     if (sesionActual().activa) {
         Parametros salir;
         salir.comando = "logout";
@@ -155,7 +159,6 @@ json apiLogin(const std::string &id, const std::string &usuario,
         cmdLogout(salir, descartable);
     }
 
-    // se reusa el comando para no duplicar las validaciones
     Parametros p;
     p.comando = "login";
     p.valores["-id"]   = id;
@@ -166,12 +169,6 @@ json apiLogin(const std::string &id, const std::string &usuario,
     cmdLogin(p, salida);
 
     const Sesion &s = sesionActual();
-    if (!s.activa) {
-        std::string motivo = salida.lineas.empty() ? "no se pudo iniciar sesion"
-                                                   : salida.lineas.front();
-        return json{{ "ok", false }, { "error", motivo }};
-    }
-
     return json{
         { "ok",      true      },
         { "usuario", s.usuario },

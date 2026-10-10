@@ -16,7 +16,9 @@ struct Sesion {
 };
 
 const Sesion &sesionActual();
-
+// valida credenciales
+bool autenticar(const std::string &id, const std::string &usuario,
+                const std::string &pass, Sesion &resultado, std::string &motivo);
 void cmdLogin (const Parametros &p, Salida &salida);
 void cmdLogout(const Parametros &p, Salida &salida);
 

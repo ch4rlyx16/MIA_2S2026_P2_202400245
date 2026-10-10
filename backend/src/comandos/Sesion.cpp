@@ -29,26 +29,23 @@ std::vector<std::string> campos(const std::string &linea) {
 const Sesion &sesionActual() { return sesion; }
 
 // ---------------- LOGIN ----------------
-void cmdLogin(const Parametros &p, Salida &salida) {
-    if (sesion.activa) {
-        salida.error("login: ya hay una sesion activa, cierrela con logout");
-        return;
-    }
 
-    std::string usuario = sinComillas(p.obtener("-user"));
-    std::string pass    = sinComillas(p.obtener("-pass"));
-    std::string id      = aMayusculas(sinComillas(p.obtener("-id")));
+// busca al usuario en users txt y deja la sesion armada en resultado
+// no toca la global asi se puede validar sin perder la sesion que ya estaba
+bool autenticar(const std::string &id, const std::string &usuario,
+                const std::string &pass, Sesion &resultado, std::string &motivo) {
+    std::string idMayus = aMayusculas(id);
 
-    const Montaje *m = buscarMontaje(id);
+    const Montaje *m = buscarMontaje(idMayus);
     if (m == nullptr) {
-        salida.error("login: no hay ninguna particion montada con id " + id);
-        return;
+        motivo = "no hay ninguna particion montada con id " + idMayus;
+        return false;
     }
 
     SuperBloque sb; int inodoUsers; Inodo nodo; std::string contenido;
     if (!leerUsersTxt(m, sb, inodoUsers, nodo, contenido)) {
-        salida.error("login: la particion " + id + " no esta formateada");
-        return;
+        motivo = "la particion " + idMayus + " no esta formateada";
+        return false;
     }
 
     std::stringstream flujo(contenido);
@@ -70,18 +67,38 @@ void cmdLogin(const Parametros &p, Salida &salida) {
             }
         }
 
-        sesion.activa  = true;
-        sesion.id      = id;
-        sesion.uid     = std::atoi(c[0].c_str());
-        sesion.gid     = gid;
-        sesion.usuario = usuario;
-        sesion.grupo   = c[2];
+        resultado.activa  = true;
+        resultado.id      = idMayus;
+        resultado.uid     = std::atoi(c[0].c_str());
+        resultado.gid     = gid;
+        resultado.usuario = usuario;
+        resultado.grupo   = c[2];
+        return true;
+    }
 
-        salida.exito("login: sesion iniciada como " + usuario + " en " + id);
+    motivo = "usuario o contrasena incorrectos";
+    return false;
+}
+
+void cmdLogin(const Parametros &p, Salida &salida) {
+    if (sesion.activa) {
+        salida.error("login: ya hay una sesion activa, cierrela con logout");
         return;
     }
 
-    salida.error("login: usuario o contrasena incorrectos");
+    std::string usuario = sinComillas(p.obtener("-user"));
+    std::string pass    = sinComillas(p.obtener("-pass"));
+    std::string id      = aMayusculas(sinComillas(p.obtener("-id")));
+
+    Sesion nueva;
+    std::string motivo;
+    if (!autenticar(id, usuario, pass, nueva, motivo)) {
+        salida.error("login: " + motivo);
+        return;
+    }
+
+    sesion = nueva;
+    salida.exito("login: sesion iniciada como " + usuario + " en " + id);
 }
 
 // ---------------- LOGOUT ----------------

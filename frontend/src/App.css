@@ -24,6 +24,59 @@ h2 {
     margin-top: 10px;
 }
 
+.cargando {
+    padding: 20px;
+    color: #666;
+}
+
+/* Cabecera y sesion */
+.cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.sesion-activa {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quien {
+    font-family: monospace;
+    font-size: 12px;
+    color: #444;
+}
+
+.sesion-activa button {
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+/* Pestanas */
+.pestanas {
+    display: flex;
+    gap: 4px;
+    margin: 16px 0 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+.pestanas button {
+    padding: 8px 18px;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+}
+
+.pestanas button.activa {
+    color: #111;
+    border-bottom-color: #111;
+}
+
 .acciones {
     display: flex;
     align-items: center;
@@ -40,6 +93,166 @@ h2 {
     color: #666;
     font-family: monospace;
     font-size: 12px;
+}
+
+/* Formulario de login */
+.aviso {
+    color: #666;
+    font-size: 13px;
+    margin: 20px 0 14px;
+    max-width: 560px;
+}
+
+.login {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 300px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.login h2 {
+    margin: 0;
+    font-size: 15px;
+    color: #111;
+}
+
+.login label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #555;
+}
+
+.login input {
+    padding: 7px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+.login button {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.error {
+    color: #b00020;
+    font-size: 12px;
+    margin: 0;
+}
+
+/* Visualizador */
+.barra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0 12px;
+    flex-wrap: wrap;
+}
+
+.miga {
+    font-size: 13px;
+    color: #999;
+}
+
+.miga button {
+    border: none;
+    background: none;
+    padding: 2px 3px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #0b5ed7;
+}
+
+.miga button:hover {
+    text-decoration: underline;
+}
+
+.miga .actual {
+    color: #111;
+    padding: 2px 3px;
+}
+
+.herramientas {
+    display: flex;
+    gap: 6px;
+}
+
+.herramientas button {
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+.herramientas button.activa {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tabla th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #888;
+    padding: 6px 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tabla td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.tabla tr.clicable {
+    cursor: pointer;
+}
+
+.tabla tr.clicable:hover {
+    background: #f5f8ff;
+}
+
+.tabla tr.inerte {
+    color: #aaa;
+}
+
+.tabla .nombre {
+    font-weight: 500;
+    color: #111;
+}
+
+.tabla .mono,
+.meta .mono {
+    font-family: monospace;
+}
+
+.tabla .octal {
+    color: #999;
+}
+
+.tabla .recortado {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meta {
+    font-size: 12px;
+    color: #666;
+    margin: 0 0 8px;
 }
 
 /* Areas tipo terminal */
