@@ -22,4 +22,11 @@ nlohmann::json apiCarpeta(const std::string &id, const std::string &ruta);
 nlohmann::json apiArchivo(const std::string &id, const std::string &ruta);
 nlohmann::json apiJournaling(const std::string &id);
 
+/* Genera un reporte y lo devuelve en memoria para mandarlo por http.
+   No usa json porque el contenido es binario: deja los bytes en 'datos'
+   y el tipo en 'mime'. El archivo temporal se borra antes de retornar. */
+bool apiReporte(const std::string &id, const std::string &nombre,
+                const std::string &rutaInterna, const std::string &formato,
+                std::string &datos, std::string &mime, std::string &error);
+
 #endif

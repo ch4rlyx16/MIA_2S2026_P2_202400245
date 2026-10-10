@@ -112,9 +112,29 @@ int main() {
             responder(res, apiJournaling(parametro(req, "id")));
         });
 
+    /* devuelve la imagen misma no una ruta: el navegador no puede abrir
+       un archivo que vive en el disco del servidor */
+    servidor.Get("/reporte",
+        [](const httplib::Request &req, httplib::Response &res) {
+            std::string datos, mime, error;
+
+            if (!apiReporte(parametro(req, "id"),
+                            parametro(req, "name"),
+                            parametro(req, "path_file_ls"),
+                            parametro(req, "formato", "png"),
+                            datos, mime, error)) {
+                res.status = 400;
+                responder(res, json{{ "error", error }});
+                return;
+            }
+
+            res.set_content(datos, mime.c_str());
+        });
+
     std::cout << "Servidor escuchando en http://localhost:8080\n";
     std::cout << "  POST /ejecutar  /login  /logout\n";
-    std::cout << "  GET  /sesion  /discos  /particiones  /carpeta  /archivo  /journaling\n";
+    std::cout << "  GET  /sesion  /discos  /particiones  /carpeta  /archivo\n";
+    std::cout << "       /journaling  /reporte\n";
     std::cout << "  Ctrl+C para detener.\n";
 
     servidor.listen("0.0.0.0", 8080);

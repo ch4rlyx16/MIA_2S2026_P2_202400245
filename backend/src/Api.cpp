@@ -3,6 +3,7 @@
 #include "comandos/Discos.h"
 #include "comandos/Montaje.h"
 #include "comandos/Permisos.h"
+#include "comandos/Rep.h"
 #include "comandos/Sesion.h"
 
 #include "disco/Ext2.h"
@@ -11,7 +12,13 @@
 #include "util/Archivo.h"
 #include "util/Texto.h"
 
+#include <unistd.h>
+
+#include <atomic>
+#include <cstdio>
 #include <ctime>
+#include <fstream>
+#include <iterator>
 #include <vector>
 
 using json = nlohmann::json;
@@ -299,4 +306,86 @@ json apiJournaling(const std::string &id) {
         { "entradas", lista              },
         { "maximo",   JOURNAL_ENTRADAS   }
     };
+}
+
+/* ---------- Reportes ---------- */
+namespace {
+
+// estos tres se guardan como texto plano el resto los dibuja graphviz
+bool esDeTexto(const std::string &nombre) {
+    return nombre == "bm_inode" || nombre == "bm_block" || nombre == "file";
+}
+
+std::string mimeDe(const std::string &ext) {
+    if (ext == "png") return "image/png";
+    if (ext == "jpg") return "image/jpeg";
+    if (ext == "svg") return "image/svg+xml";
+    if (ext == "pdf") return "application/pdf";
+    return "text/plain; charset=utf-8";
+}
+
+// un nombre distinto por peticion para que dos reportes a la vez no choquen
+// el contador es atomico porque httplib atiende cada conexion en su hilo
+std::string rutaTemporal(const std::string &ext) {
+    static std::atomic<int> contador{0};
+    return "/tmp/mia_rep_" + std::to_string(getpid()) + "_" +
+           std::to_string(++contador) + "." + ext;
+}
+
+// cmdRep antepone Error: a los fallos y aca sobra
+std::string sinPrefijo(const std::string &linea) {
+    const std::string marca = "Error: ";
+    return linea.rfind(marca, 0) == 0 ? linea.substr(marca.size()) : linea;
+}
+
+} // namespace
+
+bool apiReporte(const std::string &id, const std::string &nombre,
+                const std::string &rutaInterna, const std::string &formato,
+                std::string &datos, std::string &mime, std::string &error) {
+    std::string tipo = aMinusculas(nombre);
+    if (tipo.empty()) {
+        error = "falta indicar que reporte se quiere";
+        return false;
+    }
+
+    std::string ext = esDeTexto(tipo) ? "txt" : aMinusculas(formato);
+    if (ext != "txt" && ext != "png" && ext != "jpg" &&
+        ext != "svg" && ext != "pdf") {
+        error = "formato no soportado: " + formato;
+        return false;
+    }
+
+    // se reusa el comando para no duplicar la logica de cada reporte
+    std::string destino = rutaTemporal(ext);
+
+    Parametros p;
+    p.comando = "rep";
+    p.valores["-id"]   = id;
+    p.valores["-name"] = tipo;
+    p.valores["-path"] = destino;
+    if (!rutaInterna.empty()) p.valores["-path_file_ls"] = rutaInterna;
+
+    Salida salida;
+    cmdRep(p, salida);
+
+    std::ifstream archivo(destino, std::ios::binary);
+    if (!archivo) {
+        error = salida.lineas.empty() ? "no se pudo generar el reporte"
+                                      : sinPrefijo(salida.lineas.front());
+        return false;
+    }
+
+    datos.assign(std::istreambuf_iterator<char>(archivo),
+                 std::istreambuf_iterator<char>());
+    archivo.close();
+    std::remove(destino.c_str());
+
+    if (datos.empty()) {
+        error = "el reporte salio vacio";
+        return false;
+    }
+
+    mime = mimeDe(ext);
+    return true;
 }

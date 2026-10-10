@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { logout, pedirSesion } from "./api";
 import Login from "./Login";
+import Reportes from "./Reportes";
 import Terminal from "./Terminal";
 import Visualizador from "./Visualizador";
 import "./App.css";
@@ -76,24 +77,31 @@ export default function App() {
                 >
                     Visualizador
                 </button>
+                <button
+                    className={seccion === "reportes" ? "activa" : ""}
+                    onClick={() => setSeccion("reportes")}
+                >
+                    Reportes
+                </button>
             </nav>
 
             {seccion === "terminal" && <Terminal alTerminar={refrescarSesion} />}
 
-            {seccion === "visualizador" && (
-                sesion ? (
-                    <Visualizador />
-                ) : (
-                    <>
-                        <p className="aviso">
-                            Inicia sesion para explorar el sistema de archivos.
-                            Si todavia no tienes particiones creala desde la terminal
-                            con mkdisk fdisk mount y mkfs
-                        </p>
-                        <Login alEntrar={entrar} />
-                    </>
-                )
+            {/* la terminal es la unica que no pide sesion porque sin ella
+                no habria forma de crear el primer disco */}
+            {seccion !== "terminal" && !sesion && (
+                <>
+                    <p className="aviso">
+                        Inicia sesion para explorar el sistema de archivos.
+                        Si todavia no tienes particiones creala desde la terminal
+                        con mkdisk fdisk mount y mkfs
+                    </p>
+                    <Login alEntrar={entrar} />
+                </>
             )}
+
+            {seccion === "visualizador" && sesion && <Visualizador />}
+            {seccion === "reportes"     && sesion && <Reportes sesion={sesion} />}
         </div>
     );
 }

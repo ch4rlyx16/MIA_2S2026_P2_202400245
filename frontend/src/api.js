@@ -85,3 +85,34 @@ export function pedirArchivo(id, path) {
 export function pedirJournaling(id) {
     return obtener("/journaling", { id });
 }
+
+/* ---------- Reportes ---------- */
+
+// este no pasa por peticion porque la respuesta es una imagen y no json
+// solo cuando algo falla el servidor contesta con json y ahi si se lanza
+export async function pedirReporte(id, nombre, rutaInterna, formato) {
+    const query = new URLSearchParams({ id, name: nombre, formato });
+    if (rutaInterna) query.set("path_file_ls", rutaInterna);
+
+    let respuesta;
+    try {
+        respuesta = await fetch(`${URL_API}/reporte?${query}`);
+    } catch {
+        throw new Error(
+            `No se pudo conectar con el backend en ${URL_API}. ` +
+            "Verifica que el servidor este corriendo."
+        );
+    }
+
+    const tipo = respuesta.headers.get("Content-Type") ?? "";
+
+    if (tipo.includes("application/json")) {
+        const datos = await respuesta.json();
+        throw new Error(datos.error ?? "no se pudo generar el reporte");
+    }
+    if (!respuesta.ok) {
+        throw new Error(`El servidor respondio con el codigo ${respuesta.status}.`);
+    }
+
+    return { blob: await respuesta.blob(), tipo };
+}
