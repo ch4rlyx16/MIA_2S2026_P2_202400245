@@ -50,6 +50,7 @@ const std::map<std::string, Manejador> &manejadores() {
         { "move",       cmdMove     },
         { "find",       cmdFind     },
         { "chown",      cmdChown    },
+        { "chmod",      cmdChmod    },
     };
     return tabla;
 }

@@ -33,6 +33,7 @@ COPY       : C O P Y ;
 MOVE       : M O V E ;
 FIND       : F I N D ;
 CHOWN      : C H O W N ;
+CHMOD      : C H M O D ;
 
 /* ---------- 2. PARAMETROS ---------- */
 P_SIZE          : GUION S I Z E ;
@@ -54,6 +55,7 @@ P_DELETE        : GUION D E L E T E ;
 P_ADD           : GUION A D D ;
 P_DESTINO       : GUION D E S T I N O ;
 P_USUARIO       : GUION U S U A R I O ;
+P_UGO           : GUION U G O ;
 
 /* cat recibe -file1, -file2 ... -fileN: el numero es parte del nombre
    del parametro, no un valor, asi que se reconoce dentro del token. */

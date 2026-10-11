@@ -39,6 +39,7 @@ const std::map<std::string, std::vector<std::string>> &obligatorios() {
         { "move",       { "-path", "-destino" } },
         { "find",       { "-path", "-name" } },
         { "chown",      { "-path", "-usuario" } },
+        { "chmod",      { "-path", "-ugo" } },
     };
     return tabla;
 }

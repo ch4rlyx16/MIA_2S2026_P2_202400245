@@ -10,5 +10,6 @@ void cmdCopy  (const Parametros &p, Salida &salida);
 void cmdMove  (const Parametros &p, Salida &salida);
 void cmdFind  (const Parametros &p, Salida &salida);
 void cmdChown (const Parametros &p, Salida &salida);
+void cmdChmod (const Parametros &p, Salida &salida);
 
 #endif

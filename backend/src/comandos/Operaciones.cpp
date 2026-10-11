@@ -192,13 +192,19 @@ bool coincide(const std::string &patron, const std::string &texto) {
     return p == patron.size();
 }
 
-// recorre el subarbol mostrando lo que coincide con el patron
-void buscarEn(const std::string &ruta, const SuperBloque &sb, int indice,
+// recorre el subarbol y arma las lineas de lo que coincide con el patron
+// una carpeta se dibuja aunque no coincida si algo adentro si lo hace
+// sin eso dos archivos con el mismo nombre en carpetas distintas salen iguales
+// devuelve true si el subarbol aporto alguna linea
+bool buscarEn(const std::string &ruta, const SuperBloque &sb, int indice,
               const std::string &patron, const Sesion &s,
-              const std::string &sangria, Salida &salida, int &hallados) {
+              const std::string &sangria, std::vector<std::string> &lineas,
+              int &hallados) {
     Inodo nodo;
-    if (!leerInodo(ruta, sb, indice, nodo)) return;
-    if (nodo.i_type != '0' || !puedeLeer(s, nodo)) return;
+    if (!leerInodo(ruta, sb, indice, nodo)) return false;
+    if (nodo.i_type != '0' || !puedeLeer(s, nodo)) return false;
+
+    bool aporto = false;
 
     for (int d = 0; d < 12; ++d) {
         if (nodo.i_block[d] == -1) continue;
@@ -213,16 +219,33 @@ void buscarEn(const std::string &ruta, const SuperBloque &sb, int indice,
             Inodo hijo;
             if (!leerInodo(ruta, sb, c.b_inodo, hijo)) continue;
 
-            bool esCarpeta = hijo.i_type == '0';
-            if (coincide(patron, n)) {
-                salida.escribir(sangria + "|_ " + n + (esCarpeta ? "/" : ""));
+            bool esCarpeta  = hijo.i_type == '0';
+            bool coincidio  = coincide(patron, n);
+            std::string perm = "#" + aTexto(hijo.i_perm, 3);
+
+            if (!esCarpeta) {
+                if (!coincidio) continue;
+                lineas.push_back(sangria + "|_ " + n + "   " + perm);
                 ++hallados;
+                aporto = true;
+                continue;
             }
-            if (esCarpeta)
-                buscarEn(ruta, sb, c.b_inodo, patron, s, sangria + "   ",
-                         salida, hallados);
+
+            // la carpeta se guarda aparte para saber si vale la pena pintarla
+            std::vector<std::string> dentro;
+            bool hayDentro = buscarEn(ruta, sb, c.b_inodo, patron, s,
+                                      sangria + "   ", dentro, hallados);
+
+            if (!coincidio && !hayDentro) continue;
+
+            lineas.push_back(sangria + "|_ " + n + "/   " + perm);
+            if (coincidio) ++hallados;
+            lineas.insert(lineas.end(), dentro.begin(), dentro.end());
+            aporto = true;
         }
     }
+
+    return aporto;
 }
 
 // cambia el dueno de un inodo y opcionalmente de todo lo que cuelga
@@ -251,6 +274,37 @@ void cambiarDueno(const std::string &ruta, SuperBloque &sb, int indice,
             std::string n = aTexto(c.b_name, 12);
             if (c.b_inodo == -1 || n == "." || n == "..") continue;
             cambiarDueno(ruta, sb, c.b_inodo, nuevoUid, true, s, cambiados);
+        }
+    }
+}
+
+// cambia los permisos de un inodo y opcionalmente de todo lo que cuelga
+void cambiarPermisos(const std::string &ruta, SuperBloque &sb, int indice,
+                     const std::string &ugo, bool recursivo, const Sesion &s,
+                     int &cambiados) {
+    Inodo nodo;
+    if (!leerInodo(ruta, sb, indice, nodo)) return;
+
+    // root puede con todo, los demas solo con lo suyo
+    if (s.usuario == "root" || nodo.i_uid == s.uid) {
+        for (int i = 0; i < 3; ++i) nodo.i_perm[i] = ugo[i];
+        nodo.i_mtime = std::time(nullptr);
+        escribirInodo(ruta, sb, indice, nodo);
+        ++cambiados;
+    }
+
+    if (!recursivo || nodo.i_type != '0') return;
+
+    for (int d = 0; d < 12; ++d) {
+        if (nodo.i_block[d] == -1) continue;
+
+        BloqueCarpeta bloque;
+        leerDe(ruta, posBloque(sb, nodo.i_block[d]), bloque);
+
+        for (const Contenido &c : bloque.b_content) {
+            std::string n = aTexto(c.b_name, 12);
+            if (c.b_inodo == -1 || n == "." || n == "..") continue;
+            cambiarPermisos(ruta, sb, c.b_inodo, ugo, true, s, cambiados);
         }
     }
 }
@@ -513,8 +567,11 @@ void cmdFind(const Parametros &p, Salida &salida) {
     }
 
     salida.escribir(inicio);
+
     int hallados = 0;
-    buscarEn(m->ruta, sb, indice, patron, *s, "", salida, hallados);
+    std::vector<std::string> lineas;
+    buscarEn(m->ruta, sb, indice, patron, *s, "   ", lineas, hallados);
+    for (const std::string &l : lineas) salida.escribir(l);
 
     salida.escribir("find: " + std::to_string(hallados) +
                     " coincidencias con el patron " + patron);
@@ -551,4 +608,43 @@ void cmdChown(const Parametros &p, Salida &salida) {
     anotarJournal(m, "chown", destino, usuario);
     salida.exito("chown: " + std::to_string(cambiados) +
                  " elementos ahora pertenecen a " + usuario);
+}
+
+// ---------------- CHMOD ----------------
+void cmdChmod(const Parametros &p, Salida &salida) {
+    const Sesion *s; const Montaje *m; SuperBloque sb;
+    if (!abrir("chmod", salida, s, m, sb)) return;
+
+    std::string destino = sinComillas(p.obtener("-path"));
+    std::string ugo     = sinComillas(p.obtener("-ugo"));
+
+    // tienen que ser tres digitos octales uno por cada categoria
+    if (ugo.size() != 3) {
+        salida.error("chmod: -ugo debe llevar tres digitos, por ejemplo 664");
+        return;
+    }
+    for (char c : ugo) {
+        if (c < '0' || c > '7') {
+            salida.error("chmod: cada digito de -ugo va de 0 a 7");
+            return;
+        }
+    }
+
+    int indice = buscarInodoPorRuta(m->ruta, sb, destino);
+    if (indice == -1) {
+        salida.error("chmod: no existe " + destino);
+        return;
+    }
+
+    int cambiados = 0;
+    cambiarPermisos(m->ruta, sb, indice, ugo, p.tiene("-r"), *s, cambiados);
+
+    if (cambiados == 0) {
+        salida.error("chmod: no tiene permiso para cambiar los permisos de " + destino);
+        return;
+    }
+
+    anotarJournal(m, "chmod", destino, ugo);
+    salida.exito("chmod: " + std::to_string(cambiados) +
+                 " elementos quedaron con permisos " + ugo);
 }

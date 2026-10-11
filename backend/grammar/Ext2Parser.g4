@@ -18,6 +18,7 @@ comando
     | cmdJournaling | cmdLoss | cmdUnmount
     | cmdRemove | cmdRename | cmdCopy
     | cmdMove | cmdFind | cmdChown
+    | cmdChmod
     ;
 
 /* ---------- Administracion de discos ---------- */
@@ -97,6 +98,13 @@ cmdChown : CHOWN paramChown* ;
 paramChown
     : P_PATH    EQ valorRuta
     | P_USUARIO EQ valorTexto
+    | P_R
+    ;
+
+cmdChmod : CHMOD paramChmod* ;
+paramChmod
+    : P_PATH EQ valorRuta
+    | P_UGO  EQ valorEntero    // tres digitos octales por ejemplo 640
     | P_R
     ;
 cmdCat : CAT paramCat* ;
