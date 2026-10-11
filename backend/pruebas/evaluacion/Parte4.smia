@@ -1,15 +1,15 @@
 # PARTE 4 
-# REEMPLZAR POR LOS IDS CORRECTOS
+# IDs del carne 202400245: 451A es ext2 y 452A es ext3
 
 
 # [OK] Ver operaciones registradas para particion EXT3 - MKDIR, MKFILE, RENAME, COPY, MOVE o REMOVE
-journaling -id=ID_EXT3
+journaling -id=452A
 
 # ------- revisar los bitmaps para ver que si exista indo 
 
 
 # [OK] Simular perdida 
-loss -id=ID_EXT3
+loss -id=452A
 # bitmaps en 0
 
 
@@ -17,12 +17,12 @@ loss -id=ID_EXT3
 
 # --------UNMOUNT
 # [OK] Desmontar EXT2.
-unmount -id=ID_EXT2
+unmount -id=451A
 mounted
 # [ERROR] ID ya desmontado.
-unmount -id=ID_EXT2
+unmount -id=451A
 # [OK] Desmontar EXT3.
-unmount -id=ID_EXT3
+unmount -id=452A
 
 # revisar
 mounted

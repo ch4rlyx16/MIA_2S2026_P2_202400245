@@ -27,13 +27,12 @@ mount -path=/tmp/mia_p2_eval/disco.mia -name=ext3
 mounted
 
 
-# PAUSA MANUAL: copiar IDs reales desde la salida de MOUNTED.
-# Reemplazar ID_EXT2 e ID_EXT3 ABAJO CON EL IDENTIFICADOR SEGUN SU NUMERO DE CARNET
+# IDs ya sustituidos para el carne 202400245: 451A es ext2 y 452A es ext3
 
 
 # [OK] Verificar soporte de EXT2 y EXT3.
-mkfs -id=ID_EXT2 -fs=2fs
-mkfs -id=ID_EXT3 -fs=3fs
+mkfs -id=451A -fs=2fs
+mkfs -id=452A -fs=3fs
 
 # SE VERIFICA EN LA INTERFAZ GRAFICA QUE ESTEN CREADOS (users.txt y raiz /.)
 

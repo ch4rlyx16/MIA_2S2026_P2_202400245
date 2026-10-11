@@ -1,6 +1,6 @@
 # PARTE 2 
 
-# ANTES DE EJECUTAR: LOGIN desde interfaz con usuario root, clave 123 e ID_EXT3 (EXT3 ES LA 2 PARTICION MONTADA)
+# ANTES DE EJECUTAR: LOGIN desde interfaz con usuario root, clave 123 e 452A (EXT3 ES LA 2 PARTICION MONTADA)
 
 # [OK] Crear directorios 
 mkdir -path=/evaluacion -p
